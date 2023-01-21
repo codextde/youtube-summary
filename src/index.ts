@@ -1,72 +1,29 @@
-import { protos, TextToSpeechClient } from "@google-cloud/text-to-speech";
+import axios from "axios";
+import * as dotenv from "dotenv-safe";
+import * as fs from "fs";
+import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 import { Input, Telegraf } from "telegraf";
 import { message } from "telegraf/filters";
 import YoutubeTranscript from "youtube-transcript";
-import * as dotenv from "dotenv-safe";
-import * as util from "util";
-import * as fs from "fs";
-import axios from "axios";
-import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 dotenv.config();
 
-const telegramBotKey = process.env.TELEGRAM_TOKEN;
-let bot: any;
+let bot: Telegraf;
 let languageMapping = [];
-let ttsClient = new TextToSpeechClient();
-const speechConfig = sdk.SpeechConfig.fromSubscription(
-  process.env.SPEECH_KEY,
-  process.env.SPEECH_REGION
-);
-const audioConfig = sdk.AudioConfig.fromAudioFileOutput("output.wav");
-
-// The language of the voice that speaks.
-speechConfig.speechSynthesisVoiceName = "de-DE-ChristophNeural";
-
-// Create the speech synthesizer.
-var synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 
 initTelegram();
 
-async function tts(query: string): Promise<string | void> {
-  return new Promise((resolve)=> {
-  synthesizer.speakTextAsync(
-    query,
-    (result) => {
-      if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-        console.log("synthesis finished.");
-        resolve("output.wav")
-      } else {
-        console.error(
-          "Speech synthesis canceled, " +
-            result.errorDetails +
-            "\nDid you set the speech resource key and region values?"
-        );
-      }
-      synthesizer.close();
-      synthesizer = null;
-     
-    },
-    (err) => {
-      console.trace("err - " + err);
-      synthesizer.close();
-      synthesizer = null;
-    }
-  );
-})
-}
-
 async function initTelegram() {
-  bot = new Telegraf(telegramBotKey, {
+  bot = new Telegraf(process.env.TELEGRAM_TOKEN, {
     handlerTimeout: 900_000,
   });
-  bot.start((ctx) => ctx.reply("Schicke mir ein YouTube Video Link"));
-  bot.help((ctx) => ctx.reply("Schicke mir ein YouTube Video Link"));
+  bot.start((ctx) => ctx.reply("Send me a YouTube Video Link"));
+  bot.help((ctx) => ctx.reply("Send me a YouTube Video Link"));
 
   bot.on(message("text"), (ctx) => {
     handleMessage(ctx);
   });
-  bot.hears("hi", (ctx) => ctx.reply("Hello Hello"));
+  bot.hears("hi", (ctx) => ctx.reply("Hi Ho"));
   bot.launch();
 
   process.once("SIGINT", () => bot.stop("SIGINT"));
@@ -125,12 +82,12 @@ async function handleMessage(ctx) {
       if (answer?.response) {
         await ctx.reply(answer.response);
         await ctx.reply("🐾 ChatGPT: audio wird erstellt");
-        const audioFile = (await tts(answer.response)) || "output.wav";
+        const audioFile = await microsoftTts(answer.response);
         await ctx.replyWithAudio(Input.fromLocalFile(audioFile));
         await fs.unlinkSync(audioFile);
         await ctx.reply("🐾 ChatGPT: done 😘");
       } else {
-        await ctx.reply("🐾 ChatGPT: not running");
+        await ctx.reply("🐾 ChatGPT: no response");
       }
     } else {
       await ctx.reply("🐾 YouTube: Kein Video gefunden");
@@ -149,7 +106,41 @@ async function handleMessage(ctx) {
   }
 }
 
+async function askQuestion(prompt: string) {
+  console.log("length", prompt.length);
+  const response = await axios.post(`http://localhost:3000/sendMessage`, {
+    text: prompt,
+  });
+  return response.data;
+}
+async function microsoftTts(query: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const speechConfig = sdk.SpeechConfig.fromSubscription(
+      process.env.SPEECH_KEY,
+      process.env.SPEECH_REGION
+    );
+    const audioConfig = sdk.AudioConfig.fromAudioFileOutput("output.wav");
+    speechConfig.speechSynthesisVoiceName = "de-DE-ChristophNeural";
+    const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
+    synthesizer.speakTextAsync(
+      query,
+      (result) => {
+        if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+          resolve("output.wav");
+        } else {
+          reject(result.errorDetails);
+        }
+      },
+      (err) => {
+        reject(err);
+      }
+    );
+  });
+}
+// GOOGLE TTS
+/*
 async function textToSpeech(text: string) {
+  let ttsClient = new TextToSpeechClient();
   const request: protos.google.cloud.texttospeech.v1.ISynthesizeSpeechRequest =
     {
       input: { text: text },
@@ -166,11 +157,4 @@ async function textToSpeech(text: string) {
   await writeFile("output.mp3", response.audioContent, "binary");
   return "output.mp3";
 }
-
-async function askQuestion(prompt: string) {
-  console.log("length", prompt.length);
-  const response = await axios.post(`http://localhost:3000/sendMessage`, {
-    text: prompt,
-  });
-  return response.data;
-}
+*/
