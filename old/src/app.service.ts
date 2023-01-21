@@ -12,29 +12,14 @@ dotenv.config();
 
 @Injectable()
 export class AppService {
-  videoId = '1Yzfxz-cT3c';
   telegramBotKey = process.env.TELEGRAM_TOKEN;
-  // ChatGPT User
-  config = {
-    email: process.env.EMAIL,
-    password: process.env.PASSWORD,
-    debug: false,
-    minimize: true,
-    markdown: true,
-    nopechaKey: process.env.NOPECHA_KEY,
-  };
-
   api: any;
   bot: any;
 
   languageMapping = [];
   ttsClient = new textToSpeech.TextToSpeechClient();
 
-  constructor() {
-    this.initChatGPT();
-    //this.textToSpeech('test');
-    //this.listVoices();
-  }
+  constructor() {}
 
   async listVoices() {
     const [result] = await this.ttsClient.listVoices({ languageCode: 'de-DE' });
