@@ -29,12 +29,13 @@ var synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 initTelegram();
 
 async function tts(query: string): Promise<string | void> {
+  return new Promise((resolve)=> {
   synthesizer.speakTextAsync(
     query,
     (result) => {
       if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
         console.log("synthesis finished.");
-        return "output.wav";
+        resolve("output.wav")
       } else {
         console.error(
           "Speech synthesis canceled, " +
@@ -44,6 +45,7 @@ async function tts(query: string): Promise<string | void> {
       }
       synthesizer.close();
       synthesizer = null;
+     
     },
     (err) => {
       console.trace("err - " + err);
@@ -51,6 +53,7 @@ async function tts(query: string): Promise<string | void> {
       synthesizer = null;
     }
   );
+})
 }
 
 async function initTelegram() {
