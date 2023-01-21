@@ -6,6 +6,7 @@ import * as dotenv from "dotenv-safe";
 import * as util from "util";
 import * as fs from "fs";
 import axios from "axios";
+import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 
 dotenv.config();
 
@@ -13,8 +14,44 @@ const telegramBotKey = process.env.TELEGRAM_TOKEN;
 let bot: any;
 let languageMapping = [];
 let ttsClient = new TextToSpeechClient();
+const speechConfig = sdk.SpeechConfig.fromSubscription(
+  process.env.SPEECH_KEY,
+  process.env.SPEECH_REGION
+);
+const audioConfig = sdk.AudioConfig.fromAudioFileOutput("output.wav");
+
+// The language of the voice that speaks.
+speechConfig.speechSynthesisVoiceName = "de-DE-ChristophNeural";
+
+// Create the speech synthesizer.
+var synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
 
 initTelegram();
+
+async function tts(query: string): Promise<string | void> {
+  synthesizer.speakTextAsync(
+    query,
+    (result) => {
+      if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
+        console.log("synthesis finished.");
+        return "output.wav";
+      } else {
+        console.error(
+          "Speech synthesis canceled, " +
+            result.errorDetails +
+            "\nDid you set the speech resource key and region values?"
+        );
+      }
+      synthesizer.close();
+      synthesizer = null;
+    },
+    (err) => {
+      console.trace("err - " + err);
+      synthesizer.close();
+      synthesizer = null;
+    }
+  );
+}
 
 async function initTelegram() {
   bot = new Telegraf(telegramBotKey, {
@@ -85,7 +122,7 @@ async function handleMessage(ctx) {
       if (answer?.response) {
         await ctx.reply(answer.response);
         await ctx.reply("🐾 ChatGPT: audio wird erstellt");
-        const audioFile = await textToSpeech(answer.response);
+        const audioFile = (await tts(answer.response)) || "output.wav";
         await ctx.replyWithAudio(Input.fromLocalFile(audioFile));
         await fs.unlinkSync(audioFile);
         await ctx.reply("🐾 ChatGPT: done 😘");
