@@ -20,7 +20,9 @@ async function initTelegram() {
   bot.start((ctx) => ctx.reply("Send me a YouTube Video Link"));
   bot.help((ctx) => ctx.reply("Send me a YouTube Video Link"));
 
-  bot.on(message("text"), (ctx) => {
+  bot.on(message("text"), async (ctx) => {
+    // const audioFile = await microsoftTts("Test");
+    // await ctx.replyWithAudio(Input.fromBuffer(audioFile));
     handleMessage(ctx);
   });
   bot.hears("hi", (ctx) => ctx.reply("Hi Ho"));
@@ -83,7 +85,7 @@ async function handleMessage(ctx) {
         await ctx.reply(answer.response);
         await ctx.reply("🐾 ChatGPT: audio wird erstellt");
         const audioFile = await microsoftTts(answer.response);
-        await ctx.replyWithAudio(Input.fromLocalFile(audioFile));
+        await ctx.replyWithAudio(Input.fromBuffer(audioFile));
         await fs.unlinkSync(audioFile);
         await ctx.reply("🐾 ChatGPT: done 😘");
       } else {
@@ -113,25 +115,32 @@ async function askQuestion(prompt: string) {
   });
   return response.data;
 }
-async function microsoftTts(query: string): Promise<string> {
+async function microsoftTts(query: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
     const speechConfig = sdk.SpeechConfig.fromSubscription(
       process.env.SPEECH_KEY,
       process.env.SPEECH_REGION
     );
-    const audioConfig = sdk.AudioConfig.fromAudioFileOutput("output.wav");
+    // const audioConfig = sdk.AudioConfig.fromAudioFileOutput("output.mp3");
     speechConfig.speechSynthesisVoiceName = "de-DE-ChristophNeural";
-    const synthesizer = new sdk.SpeechSynthesizer(speechConfig, audioConfig);
-    synthesizer.speakTextAsync(
-      query,
+    // speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3;
+
+    const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
+    let ssml = `<speak version='1.0' xml:lang='en-US' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts'><voice name='de-DE-ChristophNeural'>`;
+    ssml += `<prosody rate="${1.2}">${query}</prosody>`;
+    ssml += `</voice></speak>`;
+    synthesizer.speakSsmlAsync(
+      ssml,
       (result) => {
         if (result.reason === sdk.ResultReason.SynthesizingAudioCompleted) {
-          resolve("output.wav");
+          synthesizer.close();
+          resolve(Buffer.from(result.audioData));
         } else {
           reject(result.errorDetails);
         }
       },
       (err) => {
+        synthesizer.close();
         reject(err);
       }
     );
