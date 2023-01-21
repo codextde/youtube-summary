@@ -13,15 +13,15 @@ dotenv.config();
 @Injectable()
 export class AppService {
   videoId = '1Yzfxz-cT3c';
-  telegramBotKey = '';
+  telegramBotKey = process.env.TELEGRAM_TOKEN;
   // ChatGPT User
   config = {
-    email: 'email',
-    password: 'pw',
+    email: process.env.EMAIL,
+    password: process.env.PASSWORD,
     debug: false,
     minimize: true,
     markdown: true,
-    nopechaKey: 'captchakey',
+    nopechaKey: process.env.NOPECHA_KEY,
   };
 
   api: any;

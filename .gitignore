@@ -34,3 +34,5 @@ lerna-debug.log*
 !.vscode/launch.json
 !.vscode/extensions.json
 .env
+
+codext-website-6b59f1620f74.json
