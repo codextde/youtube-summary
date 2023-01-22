@@ -127,7 +127,7 @@ async function microsoftTts(query: string): Promise<Buffer> {
 
     const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
     let ssml = `<speak version='1.0' xml:lang='en-US' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts'><voice name='de-DE-ChristophNeural'>`;
-    ssml += `<prosody rate="${1.2}">${query}</prosody>`;
+    ssml += `<prosody rate="1.2">${query}</prosody>`;
     ssml += `</voice></speak>`;
     synthesizer.speakSsmlAsync(
       ssml,
