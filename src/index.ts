@@ -85,7 +85,7 @@ async function handleMessage(ctx) {
         await ctx.reply(answer.response);
         await ctx.reply("🐾 ChatGPT: audio wird erstellt");
         const audioFile = await microsoftTts(answer.response);
-        await ctx.replyWithAudio(Input.fromBuffer(audioFile));
+        await ctx.replyWithVoice(Input.fromBuffer(audioFile));
         await ctx.reply("🐾 ChatGPT: done 😘");
       } else {
         await ctx.reply("🐾 ChatGPT: no response");
