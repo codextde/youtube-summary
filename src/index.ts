@@ -1,6 +1,5 @@
 import axios from "axios";
 import * as dotenv from "dotenv-safe";
-import * as fs from "fs";
 import * as sdk from "microsoft-cognitiveservices-speech-sdk";
 import { Input, Telegraf } from "telegraf";
 import { message } from "telegraf/filters";
@@ -109,7 +108,7 @@ async function handleMessage(ctx) {
 
 async function askQuestion(prompt: string) {
   console.log("length", prompt.length);
-  const response = await axios.post(`http://localhost:3000/sendMessage`, {
+  const response = await axios.post(`http://localhost:3000/v2`, {
     text: prompt,
   });
   return response.data;
