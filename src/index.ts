@@ -108,10 +108,10 @@ async function handleMessage(ctx) {
 
 async function askQuestion(prompt: string) {
   console.log("length", prompt.length);
-  const response = await axios.post(`http://localhost:3000/v2`, {
+  const response: any = await axios.post(`http://localhost:3000/sendMessage`, {
     text: prompt,
   });
-  return response.data;
+  return response.text;
 }
 async function microsoftTts(query: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
