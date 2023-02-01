@@ -80,10 +80,10 @@ async function handleMessage(ctx) {
         found?.language || "de" == "de" ? "Deutsch" : "Englisch"
       } aus folgendem Videotranskript in ca. 600 Wörter:\n"${fullText}"`;
       const answer = await askQuestion(prompt);
-      if (answer?.response) {
-        await ctx.reply(answer.response);
+      if (answer) {
+        await ctx.reply(answer);
         await ctx.reply("🐾 ChatGPT: audio wird erstellt");
-        const audioFile = await microsoftTts(answer.response);
+        const audioFile = await microsoftTts(answer);
         await ctx.replyWithVoice(Input.fromBuffer(audioFile));
         await ctx.reply("🐾 ChatGPT: done 😘");
       } else {
@@ -111,7 +111,8 @@ async function askQuestion(prompt: string) {
   const response: any = await axios.post(`http://localhost:3000/sendMessage`, {
     text: prompt,
   });
-  return response.text;
+  console.log('response', response.data.text);
+  return response.data.text;
 }
 async function microsoftTts(query: string): Promise<Buffer> {
   return new Promise((resolve, reject) => {
