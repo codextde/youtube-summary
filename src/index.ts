@@ -108,7 +108,7 @@ async function handleMessage(ctx) {
 
 async function askQuestion(prompt: string) {
   console.log("length", prompt.length);
-  const response: any = await axios.post(`http://localhost:3000/sendMessage`, {
+  const response: any = await axios.post(`http://localhost:3000/message`, {
     text: prompt,
   });
   console.log('response', response.data.text);
