@@ -108,8 +108,9 @@ async function handleMessage(ctx) {
 
 async function askQuestion(prompt: string) {
   console.log("length", prompt.length);
-  const response: any = await axios.post(`${process.env.CHATGPT_API}/message?authKey=${process.env.AUTH_KEY}`, {
+  const response: any = await axios.post(`${process.env.CHATGPT_API}/message`, {
     text: prompt,
+    authKey: process.env.AUTH_KEY
   });
   console.log('response', response.data.text);
   return response.data.text;
