@@ -9,6 +9,7 @@ dotenv.config();
 
 let bot: Telegraf;
 let languageMapping = [];
+const audio: boolean = false;
 
 initTelegram();
 
@@ -20,8 +21,6 @@ async function initTelegram() {
   bot.help((ctx) => ctx.reply("Send me a YouTube Video Link"));
 
   bot.on(message("text"), async (ctx) => {
-    // const audioFile = await microsoftTts("Test");
-    // await ctx.replyWithAudio(Input.fromBuffer(audioFile));
     handleMessage(ctx);
   });
   bot.hears("hi", (ctx) => ctx.reply("Hi Ho"));
@@ -78,14 +77,17 @@ async function handleMessage(ctx) {
       await ctx.reply("🐾 Video wird zusammengefasst");
       const prompt = `Schreibe eine Zusammenfassung in der Sprache ${
         found?.language || "de" == "de" ? "Deutsch" : "Englisch"
-      } aus folgendem Videotranskript in ca. 600 Wörter:\n"${fullText}"`;
+      } aus folgendem Videotranskript. Circa 600 Wörter:\n"${fullText}"`;
+      console.log('prompt', prompt);
       const answer = await askQuestion(prompt);
       if (answer) {
         await ctx.reply(answer);
-        await ctx.reply("🐾 ChatGPT: audio wird erstellt");
-        const audioFile = await microsoftTts(answer);
-        await ctx.replyWithVoice(Input.fromBuffer(audioFile));
-        await ctx.reply("🐾 ChatGPT: done 😘");
+        if (audio) {
+          await ctx.reply("🐾 ChatGPT: audio wird erstellt");
+          const audioFile = await microsoftTts(answer);
+          await ctx.replyWithVoice(Input.fromBuffer(audioFile));
+          await ctx.reply("🐾 ChatGPT: fertig 😘");
+        }
       } else {
         await ctx.reply("🐾 ChatGPT: no response");
       }
@@ -108,10 +110,9 @@ async function handleMessage(ctx) {
 
 async function askQuestion(prompt: string) {
   console.log("length", prompt.length);
-  const response: any = await axios.post(`${process.env.CHATGPT_API}/message?authKey=${process.env.AUTH_KEY}`, {
+  const response: any = await axios.post(`${process.env.CHATGPT_API}/message?authKey=${process.env.AUTH_KEY}&chatGpt=true&model=gpt-4`, {
     text: prompt,
   });
-  console.log('response', response.data.text);
   return response.data.text;
 }
 async function microsoftTts(query: string): Promise<Buffer> {
@@ -120,10 +121,7 @@ async function microsoftTts(query: string): Promise<Buffer> {
       process.env.SPEECH_KEY,
       process.env.SPEECH_REGION
     );
-    // const audioConfig = sdk.AudioConfig.fromAudioFileOutput("output.mp3");
     speechConfig.speechSynthesisVoiceName = "de-DE-ChristophNeural";
-    // speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Audio16Khz32KBitRateMonoMp3;
-
     const synthesizer = new sdk.SpeechSynthesizer(speechConfig);
     let ssml = `<speak version='1.0' xml:lang='en-US' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts'><voice name='de-DE-ChristophNeural'>`;
     ssml += `<prosody rate="1.2">${query}</prosody>`;
@@ -145,24 +143,3 @@ async function microsoftTts(query: string): Promise<Buffer> {
     );
   });
 }
-// GOOGLE TTS
-/*
-async function textToSpeech(text: string) {
-  let ttsClient = new TextToSpeechClient();
-  const request: protos.google.cloud.texttospeech.v1.ISynthesizeSpeechRequest =
-    {
-      input: { text: text },
-      voice: {
-        languageCode: "de-DE",
-        ssmlGender: "MALE",
-        name: "de-DE-Neural2-D",
-      },
-      audioConfig: { audioEncoding: "MP3", pitch: 1.2, speakingRate: 1.3 },
-    };
-
-  const [response] = await ttsClient.synthesizeSpeech(request);
-  const writeFile = util.promisify(fs.writeFile);
-  await writeFile("output.mp3", response.audioContent, "binary");
-  return "output.mp3";
-}
-*/
